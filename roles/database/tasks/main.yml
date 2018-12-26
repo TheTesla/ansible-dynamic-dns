@@ -1,0 +1,20 @@
+---
+
+- name: Configure mysql-server root password
+  debconf:
+    name: mysql-server
+    question: "{{ item.key }}"
+    value: "{{ item.value }}"
+    vtype: password
+  with_dict: { mysql-server/root_password: "{{ mysql_root_passwd }}",  mysql-server/root_password_again: "{{ mysql_root_passwd }}" }
+
+
+- name: Install mysql and libs
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - mysql-server
+    - python-mysqldb
+
+

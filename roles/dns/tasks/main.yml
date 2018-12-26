@@ -1,0 +1,58 @@
+---
+
+- name: Configure pdns-backend-mysql
+  debconf:
+    name: pdns-backend-mysql
+    question: "{{ item['k'] }}"
+    value: "{{ item['v'] }}"
+    vtype: "{{ item['type'] }}"
+  with_items:
+    - { k: "pdns-backend-mysql/mysql/admin-pass", v: "{{ mysql_root_passwd }}", type: "password" }
+    - { k: "pdns-backend-mysql/password-confirm", v: "{{ mysql_root_passwd }}", type: "password" }
+    - { k: "pdns-backend-mysql/mysql/admin-user", v: "root", type: "string" }
+    - { k: "pdns-backend-mysql/dbconfig-install", v: "true", type: "boolean" }
+    - { k: "pdns-backend-mysql/mysql/app-pass", v: "{{ pdns_db_passwd }}", type: "password" }
+    - { k: "pdns-backend-mysql/app-password-confirm", v: "{{ pdns_db_passwd }}", type: "password" }
+    - { k: "pdns-backend-mysql/remote/port", v: "3306", type: "string" }
+    - { k: "pdns-backend-mysql/remote/host", v: "localhost", type: "string" }
+    - { k: "pdns-backend-mysql/db/dbname", v: "pdns", type: "string" }
+    - { k: "pdns-backend-mysql/mysql/method", v: "Unix socket", type: "multiselect" }
+
+- name: Install pdns and backend
+  apt:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - pdns-server
+    - pdns-backend-mysql
+
+- name: Disable systemd-resolved
+  systemd:
+    name: systemd-resolved
+    state: stopped
+    enabled: False
+
+- name: Remove bind backend
+  file:
+    path: /etc/powerdns/bindbackend.conf
+    state: absent
+
+- name: Configure pdns
+  copy:
+    dest: "/etc/powerdns/pdns.conf"
+    content: |
+      api=yes
+      api-key=changeme
+      include-dir=/etc/powerdns/pdns.d
+      launch=
+      security-poll-suffix=
+      setgid=pdns
+      setuid=pdns
+      webserver=yes
+
+- name: Restart pdns
+  systemd:
+    name: pdns
+    state: restarted
+
+
