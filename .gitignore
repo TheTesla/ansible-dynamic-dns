@@ -1,3 +1,4 @@
 vars/inwxpasswd.yml
 credentials/*
 *.retry
+.vagrant
