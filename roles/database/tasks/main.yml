@@ -2,19 +2,18 @@
 
 - name: Configure mysql-server root password
   debconf:
-    name: mysql-server
+    name: mariadb-server
     question: "{{ item.key }}"
     value: "{{ item.value }}"
     vtype: password
-  with_dict: { mysql-server/root_password: "{{ mysql_root_passwd }}",  mysql-server/root_password_again: "{{ mysql_root_passwd }}" }
-
+  with_dict: { mariadb-server/root_password: "{{ mysql_root_passwd }}",  mariadb-server/root_password_again: "{{ mysql_root_passwd }}" }
 
 - name: Install mysql and libs
   apt:
     name: "{{ item }}"
+    update_cache: True
     state: latest
   with_items:
-    - mysql-server
-    - python-mysqldb
+    - mariadb-server
 
 

@@ -1,10 +1,10 @@
 ---
 
-- hosts: all #dns-server
+- hosts: dns-server
   gather_facts: False
-  #user: root
-  user: vagrant
-  sudo: True
+  user: root
+  #user: vagrant
+  #sudo: True
   gather_facts: True
   vars_files:
     - vars/database.yml
