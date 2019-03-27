@@ -9,8 +9,12 @@
   vars_files:
     - vars/database.yml
     - vars/passwords.yml
+    - vars/inwxpasswd.yml
+    - vars/domain.yml
   roles:
       #    - up
     - database
     - dns
+    - domain
+    - api
 

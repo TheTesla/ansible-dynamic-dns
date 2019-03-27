@@ -1,0 +1,16 @@
+---
+
+alldomains:
+  - "api.smartrns.net"
+
+
+certocsp:
+  - "--ocsp"
+
+certextra: []
+
+certemail: stefan.helmert@t-online.de
+
+certbaselocation: /etc/ssl
+
+tlsa: auto:3:1:1, auto:2:0:1

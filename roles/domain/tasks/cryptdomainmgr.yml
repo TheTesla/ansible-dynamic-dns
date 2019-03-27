@@ -1,0 +1,121 @@
+---
+
+- name: Install dependencies via apt
+  apt:
+    name: '{{ item }}'
+    state: latest
+    update_cache: True
+  with_items:
+    - libcurl4-openssl-dev
+    - libssl-dev
+    - python-pip
+    - python-dnspython
+    - python-openssl
+    - curl
+    - haveged
+
+- name: Install depencies via pip
+  pip:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - jinja2
+    - configparser
+    - parse
+    - pycurl
+    - cryptdomainmgr
+
+- name: Set inwx login
+  ini_file:
+    dest: "/etc/cryptdomainmgr/inwxcred.conf"
+    section: "domain"
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+  with_dict: { user: '{{ inwxlogin }}', passwd: '{{ inwxpasswd }}' }
+
+- name: Delete old domain config
+  file: 
+    dest: "/etc/cryptdomainmgr/domains.conf"
+    state: absent
+
+- name: Set cert base configuration
+  ini_file:
+    dest: "/etc/cryptdomainmgr/domains.conf"
+    section: "cert"
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+  with_dict: { handler: 'dehydrated', keysize: '4096', certname: 'fullchain.pem' }
+ 
+- name: Set letsencrypt account e-mail
+  ini_file:
+    dest: "/etc/cryptdomainmgr/domains.conf"
+    section: "cert"
+    option: "email"
+    value: "{{ certemail }}"
+
+- name: Set live path certs are copied into on rollover
+  ini_file:
+    dest: "/etc/cryptdomainmgr/domains.conf"
+    section: "cert"
+    option: "destination"
+    value: "{{ certbaselocation }}"
+
+- name: Set letsencrypt extra arguments
+  ini_file:
+    dest: "/etc/cryptdomainmgr/domains.conf"
+    section: "cert:maincert"
+    option: "extraflags"
+    value: "{{ ( certocsp + certextra ) | join(', ') }}"
+
+- name: Set main domain configuration
+  ini_file:
+    dest: "/etc/cryptdomainmgr/domains.conf"
+    section: "domain"
+    option: "handler"
+    value: "dnsuptools/inwx"
+
+- name: Set domain configurations
+  ini_file:
+    dest: "/etc/cryptdomainmgr/domains.conf"
+    section: "domain:{{ item[1] }}"
+    option: "{{ item[0].key }}"
+    value: "{{ item[0].value }}"
+  with_nested:
+    - [{key: 'ip4', value: 'auto'}, {key: 'ip6', value: 'auto'}, {key: 'tlsa.tcp', value: '{{ tlsa }}'}, {key: 'cert', value: 'maincert'}, {key: 'caa', value: 'auto'}]
+    - "{{ alldomains }}"
+    
+
+- name: Immediatelly update DNS
+  shell: 'python -m cryptdomainmgr --update /etc/cryptdomainmgr/domains.conf /etc/cryptdomainmgr/inwxcred.conf'
+  args:
+    executable: '/bin/bash'
+  ignore_errors: True
+
+- name: Immediatelly prepare cert
+  shell: 'python -m cryptdomainmgr --prepare /etc/cryptdomainmgr/domains.conf /etc/cryptdomainmgr/inwxcred.conf'
+  args:
+    executable: '/bin/bash'
+  ignore_errors: True
+
+- name: Immediatelly rollover cert
+  shell: 'python -m cryptdomainmgr --rollover /etc/cryptdomainmgr/domains.conf /etc/cryptdomainmgr/inwxcred.conf'
+  args:
+    executable: '/bin/bash'
+  ignore_errors: True
+
+- name: Immediatelly cleanup
+  shell: 'python -m cryptdomainmgr --cleanup /etc/cryptdomainmgr/domains.conf /etc/cryptdomainmgr/inwxcred.conf'
+  args:
+    executable: '/bin/bash'
+  ignore_errors: True
+
+- name: Copy cron file
+  copy:
+    dest: "/etc/cron.d/domain"
+    src: "../files/etc/cron.d/domain"
+    mode: 0644
+    owner: root
+    group: root
+
+
+

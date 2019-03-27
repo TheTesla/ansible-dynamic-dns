@@ -1,0 +1,16 @@
+---
+
+- name: Download and Unarchive go
+  unarchive:
+    src: https://dl.google.com/go/go1.12.1.linux-amd64.tar.gz
+    dest: /usr/local/
+    remote_src: yes
+
+- name: Add go to PATH
+  blockinfile:
+    path: /etc/profile
+    block: |
+      export PATH=$PATH:/usr/local/go/bin
+
+
+
